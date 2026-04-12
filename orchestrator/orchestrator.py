@@ -6,8 +6,7 @@ import sys
 
 # ── Config ──────────────────────────────────────────────────────────────────
 SEMGREP_RULES   = "p/c"          # free C/C++ ruleset
-# MODEL_ENDPOINT  = os.environ.get("http://localhost:5000")   # your Kaggle ngrok URL
-MODEL_ENDPOINT  = "http://localhost:5000"   # your Kaggle ngrok URL
+MODEL_ENDPOINT  = os.environ.get("MODEL_ENDPOINT", "http://localhost:5000")   # your Kaggle ngrok URL
 EXCEPTION_FILE  = ".secops-exceptions.yaml"
 
 # ── 1. Run SAST ──────────────────────────────────────────────────────────────
