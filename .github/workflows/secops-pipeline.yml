@@ -34,7 +34,7 @@ jobs:
         with:
           name: generated-patches
           path: |
-            *_patch_*.c
+            **/*_patch_*.c
             patch_summary.json
 
       - name: Comment on PR (if patches generated)
