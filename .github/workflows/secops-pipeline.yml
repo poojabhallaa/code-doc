@@ -57,3 +57,43 @@ jobs:
               repo: context.repo.repo,
               body
             });
+  evaluate:
+    runs-on: ubuntu-latest
+    needs: scan-and-patch        # runs after scan-and-patch succeeds
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install tqdm pandas requests kaggle
+
+      - name: Download Big-Vul dataset
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          mkdir -p big-vul-dataset
+          kaggle datasets download -d divyanshushukla773/big-vul-dataset --path big-vul-dataset/
+          unzip big-vul-dataset/big-vul-dataset.zip -d big-vul-dataset/
+          ls big-vul-dataset/     # print contents so you can verify the csv filename
+
+      - name: Run evaluation
+        env:
+          MODEL_ENDPOINT: ${{ secrets.MODEL_ENDPOINT }}
+        run: |
+          python orchestrator/evaluate.py
+
+      - name: Upload evaluation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-report
+          path: |
+            eval_report.json
+            eval_results.csv
