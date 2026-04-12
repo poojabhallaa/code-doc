@@ -1,0 +1,59 @@
+name: SecOps Auto-Remediation Pipeline
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  scan-and-patch:
+    runs-on: ubuntu-latest         
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install semgrep requests pyyaml
+
+      - name: Run SAST + Orchestrator
+        env:
+          MODEL_ENDPOINT: ${{ secrets.MODEL_ENDPOINT }}
+        run: |
+          python orchestrator/orchestrator.py src/
+
+      - name: Upload patch artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-patches
+          path: |
+            *_patch_*.c
+            patch_summary.json
+
+      - name: Comment on PR (if patches generated)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('patch_summary.json')) return;
+            const patches = JSON.parse(fs.readFileSync('patch_summary.json'));
+            if (patches.length === 0) return;
+            
+            const body = `## SecOps Pipeline: ${patches.length} patch(es) generated\n\n` +
+              patches.map(p => `- \`${p.original}\` → rule \`${p.rule}\``).join('\n') +
+              `\n\n Patches are in build artifacts. Phase 3 fuzzing pending.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body
+            });

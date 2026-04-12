@@ -1,0 +1,8 @@
+# Files/rules exempt from auto-remediation
+exempt_files:
+  - src/legacy/old_crypto.c       # intentional — pending full rewrite (Ticket #42)
+
+exempt_rules:
+  - c.lang.security.insecure-use-strcat-fn  # handled by custom wrapper
+
+notes: "Update this file via PR only — requires lead dev approval"
