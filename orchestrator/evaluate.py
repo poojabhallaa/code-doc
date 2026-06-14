@@ -9,11 +9,11 @@ from tqdm import tqdm
 MODEL_ENDPOINT = os.environ.get("MODEL_ENDPOINT", "http://localhost:5000")
 
 # ── Query your fine-tuned model ──────────────────────────────────────────────
-def query_llm(vulnerable_code: str) -> str:
-    try:
-        response = requests.post(MODEL_ENDPOINT, json={
-            "inputs": f"""### Vulnerable C/C++ Function:
-{vulnerable_code}
+            # def query_llm(vulnerable_code: str) -> str:
+            #     try:
+            #         response = requests.post(MODEL_ENDPOINT, json={
+            #             "inputs": f"""### Vulnerable C/C++ Function:
+            # {vulnerable_code}
 
 ### Patched Memory-Safe Version:
 """,

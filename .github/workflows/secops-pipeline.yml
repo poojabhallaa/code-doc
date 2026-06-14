@@ -1,101 +1,45 @@
 name: SecOps Auto-Remediation Pipeline
 
 on:
-  push:
-    branches: [ main, dev ]
-  pull_request:
-    branches: [ main ]
+push:
+branches: [ main, dev ]
+pull_request:
+branches: [ main ]
 
 jobs:
-  scan-and-patch:
-    runs-on: ubuntu-latest         
+scan:
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+```
+steps:
+  - name: Checkout code
+    uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+  - name: Set up Python
+    uses: actions/setup-python@v5
+    with:
+      python-version: '3.11'
 
-      - name: Install dependencies
-        run: |
-          pip install semgrep requests pyyaml
+  - name: Install Semgrep
+    run: |
+      pip install semgrep
 
-      - name: Run SAST + Orchestrator
-        env:
-          MODEL_ENDPOINT: ${{ secrets.MODEL_ENDPOINT }}
-        run: |
-          python orchestrator/orchestrator.py src/
+  - name: Run Semgrep Scan
+    run: |
+      semgrep scan \
+        --config p/c \
+        --json \
+        -o semgrep_results.json \
+        src/ || true
 
-      - name: Upload patch artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: generated-patches
-          path: |
-            **/*_patch_*.c
-            patch_summary.json
+  - name: Verify results file exists
+    run: |
+      ls -l semgrep_results.json
 
-      - name: Comment on PR (if patches generated)
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            if (!fs.existsSync('patch_summary.json')) return;
-            const patches = JSON.parse(fs.readFileSync('patch_summary.json'));
-            if (patches.length === 0) return;
-            
-            const body = `## SecOps Pipeline: ${patches.length} patch(es) generated\n\n` +
-              patches.map(p => `- \`${p.original}\` → rule \`${p.rule}\``).join('\n') +
-              `\n\n Patches are in build artifacts. Phase 3 fuzzing pending.`;
-            
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body
-            });
-  evaluate:
-    runs-on: ubuntu-latest
-    needs: scan-and-patch        # runs after scan-and-patch succeeds
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
-        run: |
-          pip install tqdm pandas requests kaggle
-
-      - name: Download Big-Vul dataset
-        env:
-          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
-          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
-        run: |
-          mkdir -p ~/.kaggle
-          printf '{"username":"%s","key":"%s"}\n' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
-          chmod 600 ~/.kaggle/kaggle.json
-          mkdir -p big-vul-dataset
-          kaggle datasets download -d bstee615/bigvul --path big-vul-dataset/ --unzip
-          ls big-vul-dataset/
-          
-      - name: Run evaluation
-        env:
-          MODEL_ENDPOINT: ${{ secrets.MODEL_ENDPOINT }}
-        run: |
-          python orchestrator/evaluate.py
-
-      - name: Upload evaluation report
-        uses: actions/upload-artifact@v4
-        with:
-          name: evaluation-report
-          path: |
-            eval_report.json
-            eval_results.csv
+  - name: Upload Semgrep Results
+    uses: actions/upload-artifact@v4
+    with:
+      name: semgrep-results
+      path: semgrep_results.json
+      retention-days: 7
+```

@@ -7,7 +7,7 @@ import sys
 # ── Config ──────────────────────────────────────────────────────────────────
 SEMGREP_RULES   = "p/c"          # free C/C++ ruleset
 # MODEL_ENDPOINT  = os.environ.get("MODEL_ENDPOINT", "http://localhost:5000")   # your Kaggle ngrok URL
-MODEL_ENDPOINT = "https://licking-idealness-decimeter.ngrok-free.dev/"
+# MODEL_ENDPOINT = os.environ.get("MODEL_ENDPOINT")
 EXCEPTION_FILE  = ".secops-exceptions.yaml"
 
 # ── 1. Run SAST ──────────────────────────────────────────────────────────────
@@ -43,10 +43,10 @@ def is_exempt(filepath: str, rule_id: str, exceptions: dict) -> bool:
     exempt_rules = exceptions.get("exempt_rules", [])
     return filepath in exempt_files or rule_id in exempt_rules
 
-# ── 4. Query your fine-tuned model ───────────────────────────────────────────
-def query_llm(vulnerable_code: str) -> str:
-    prompt = f"""### Vulnerable C/C++ Function:
-{vulnerable_code}
+# # ── 4. Query your fine-tuned model ───────────────────────────────────────────
+# def query_llm(vulnerable_code: str) -> str:
+#     prompt = f"""### Vulnerable C/C++ Function:
+# {vulnerable_code}
 
 ### Patched Memory-Safe Version:
 """
@@ -117,9 +117,6 @@ def main():
             print(f"[EXEMPT] secops-ignore tag detected in code.")
             continue
 
-        # Send to your fine-tuned model
-        print(f"[LLM] Sending to model...")
-        patch = query_llm(snippet)
 
         patch_path = write_patch(filepath, patch, rule_id.split(".")[-1])
         patches.append({"original": filepath, "patch": patch_path, "rule": rule_id})
