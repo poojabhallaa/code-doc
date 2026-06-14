@@ -41,4 +41,3 @@ steps:
       name: semgrep-results
       path: semgrep_results.json
       retention-days: 7
-```
