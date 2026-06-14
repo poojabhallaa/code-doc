@@ -80,11 +80,10 @@ jobs:
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
           mkdir -p ~/.kaggle
-          echo '{"username":"${{ secrets.KAGGLE_USERNAME }}","key":"${{ secrets.KAGGLE_KEY }}"}' > ~/.kaggle/kaggle.json
+          printf '{"username":"%s","key":"%s"}\n' "$KAGGLE_USERNAME" "$KAGGLE_KEY" > ~/.kaggle/kaggle.json
           chmod 600 ~/.kaggle/kaggle.json
           mkdir -p big-vul-dataset
-          kaggle datasets download -d bstee615/bigvul --path big-vul-dataset/
-          unzip big-vul-dataset/*.zip -d big-vul-dataset/
+          kaggle datasets download -d bstee615/bigvul --path big-vul-dataset/ --unzip
           ls big-vul-dataset/
           
       - name: Run evaluation
