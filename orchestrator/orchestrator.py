@@ -50,15 +50,35 @@ def query_llm(vulnerable_code: str) -> str:
 
 ### Patched Memory-Safe Version:
 """
-    response = requests.post(MODEL_ENDPOINT, json={
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 512,
-            "temperature": 0.2,
-            "repetition_penalty": 1.15
-        }
-    })
-    return response.json().get("generated_text", "")
+
+    response = requests.post(
+        MODEL_ENDPOINT,
+        json={
+            "inputs": prompt,
+            "parameters": {
+                "max_new_tokens": 512,
+                "temperature": 0.2,
+                "repetition_penalty": 1.15
+            }
+        },
+        timeout=120
+    )
+
+    print("STATUS:", response.status_code)
+    print("HEADERS:", response.headers.get("content-type"))
+    print("BODY:")
+    print(response.text[:1000])
+
+    response.raise_for_status()
+
+    try:
+        data = response.json()
+    except Exception:
+        raise Exception(
+            f"Expected JSON but received:\n{response.text[:1000]}"
+        )
+
+    return data.get("generated_text", "")
 
 # ── 5. Write patch as a new file for review ──────────────────────────────────
 def write_patch(filepath: str, patch: str, finding_id: str):
