@@ -1,9 +1,11 @@
 #include <stdio.h>
 
+void print_value(int *ptr) {
+    printf("%d\n", *ptr);
+}
+
 int main() {
-    char buffer[10];
-    printf("Enter your name: ");
-    gets(buffer);   // Vulnerable: no bounds checking
-    printf("Hello %s\n", buffer);
+    int *p = NULL;
+    print_value(p);
     return 0;
 }
